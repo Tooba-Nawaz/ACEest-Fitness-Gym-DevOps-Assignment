@@ -1,22 +1,18 @@
 pipeline {
   agent any
   environment {
-    DOCKER_IMAGE = "toobanawaz/aceest_fitness"
+    DOCKER_IMAGE = "tooba-nawaz/aceest_fitness"
   }
   stages {
-    stage('Checkout') { steps { checkout scm } }
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
     stage('Install & Test') {
       steps {
         sh 'python -m pip install -r requirements.txt'
         sh 'pytest -q'
-      }
-    }
-    stage('Static Analysis') {
-      steps {
-        withSonarQubeEnv('MySonar') {
-    sh 'sonar-scanner'
-      }
-        echo 'Run SonarQube analysis here (configure Sonar scanner)'
       }
     }
     stage('Build Docker Image') {
@@ -26,16 +22,18 @@ pipeline {
     }
     stage('Push Image') {
       steps {
-        echo 'Push to Docker Hub (configure credentials in Jenkins)'
+        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh '''
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+            docker push $DOCKER_IMAGE:${GIT_COMMIT::8}
+          '''
+        }
       }
     }
     stage('Deploy to K8s') {
       steps {
-        echo 'Use kubectl to apply manifests (example in repo)'
+        sh 'kubectl apply -f k8s/'
       }
     }
-  }
-  post {
-    always { archiveArtifacts artifacts: '**/test-reports/*.xml', allowEmptyArchive: true }
   }
 }
