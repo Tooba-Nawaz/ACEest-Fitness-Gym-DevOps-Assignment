@@ -1,7 +1,7 @@
 pipeline {
   agent any
   environment {
-    DOCKER_IMAGE = "your-dockerhub-username/aceest_fitness"
+    DOCKER_IMAGE = "toobanawaz/aceest_fitness"
   }
   stages {
     stage('Checkout') { steps { checkout scm } }
@@ -13,7 +13,9 @@ pipeline {
     }
     stage('Static Analysis') {
       steps {
-        // Placeholder for SonarQube analysis (configure Sonar in Jenkins)
+        withSonarQubeEnv('MySonar') {
+    sh 'sonar-scanner'
+      }
         echo 'Run SonarQube analysis here (configure Sonar scanner)'
       }
     }
